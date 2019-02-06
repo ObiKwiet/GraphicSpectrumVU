@@ -1,0 +1,303 @@
+/*
+ * Copyright (c) 2015, Freescale Semiconductor, Inc.
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without modification,
+ * are permitted provided that the following conditions are met:
+ *
+ * o Redistributions of source code must retain the above copyright notice, this list
+ *   of conditions and the following disclaimer.
+ *
+ * o Redistributions in binary form must reproduce the above copyright notice, this
+ *   list of conditions and the following disclaimer in the documentation and/or
+ *   other materials provided with the distribution.
+ *
+ * o Neither the name of Freescale Semiconductor, Inc. nor the names of its
+ *   contributors may be used to endorse or promote products derived from this
+ *   software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
+ * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ * ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#include "fsl_device_registers.h"
+#include "fsl_debug_console.h"
+#include "fsl_edma_driver.h"
+#include "fsl_adc16_driver.h"
+#include "fsl_pdb_driver.h"
+#include "fsl_clock_manager.h"
+//#include "fsl_sim_hal.h"
+
+#define SAMPLEFREQ      40000
+#define BUF_SIZE        1024
+#define CLOCK_SETUP     1 // Max clock speeds
+
+
+/********** Globals ************/
+static struct Chn_State {
+edma_chn_state_t chn0;
+edma_chn_state_t chn1;
+} Chn_State;
+
+static struct stcd {
+edma_software_tcd_t chn0;
+edma_software_tcd_t chn1;
+} stcd;
+
+
+static uint16_t sampleBuffer[3][BUF_SIZE];
+//static uint16_t (*activeBuffer)[BUF_SIZE] = sampleBuffer;
+
+//Pointer to active sample buffer. This sets it to sampleBuffer[0][].
+static struct sBufferLabel {
+    uint16_t (*activeBuffer)[BUF_SIZE];// = &(sampleBuffer[0]);
+    uint16_t (*lowerBuffer)[BUF_SIZE];// = &(sampleBuffer[1]);
+    uint16_t (*upperBuffer)[BUF_SIZE];// = &(sampleBuffer[2]);
+    uint16_t activeBufferIdx = 0;
+} sBufferLabel;
+
+
+/********** End Globals ***********/
+
+// This configures channel 0 on adc(instance).
+// The instance refers to the actual ADC hardware module, either ADC0 or ADC1
+// on the K64F.
+// The channel is the pin that is connected to the ADC.
+static void init_adc(uint32_t instance) {
+
+	/******** Initialize Data Structures *********/
+
+    //Config
+	adc16_converter_config_t userConvConfig;
+	adc16_chn_config_t userChnConfig;
+
+    //Calibration
+    adc16_calibration_param_t userCalConfig;
+
+
+    /********* Configure ADC **********/
+
+    //Set Converter Configuration Values
+    userConvConfig.lowPowerEnable = false;
+    userConvConfig.clkDividerMode = kAdc16ClkDividerOf1;
+    userConvConfig.longSampleTimeEnable = false;
+    userConvConfig.resolution = kAdc16ResolutionBitOf12or13; //12bit for Single Ended Converison
+    userConvConfig.clkSrc = kAdc16ClkSrcOfAsynClk;
+    userConvConfig.asyncClkEnable = true;
+    userConvConfig.highSpeedEnable = true;
+    userConvConfig.longSampleCycleMode = kAdc16LongSampleCycleOf24;
+    userConvConfig.hwTriggerEnable = true;
+    userConvConfig.refVoltSrc = kAdc16RefVoltSrcOfVref;
+    userConvConfig.continuousConvEnable = false;
+    userConvConfig.dmaEnable = true;
+
+    //Initialize ADC
+    ADC16_DRV_Init(instance, &userConvConfig);
+
+    //Calibrate ADC
+    ADC16_DRV_GetAutoCalibrationParam(instance, &userCalConfig);
+    ADC16_DRV_SetCalibrationParam(instance, &userCalConfig);
+
+    //Set Channel Configuration Values
+    userChnConfig.chnIdx = kAdc16Chn0d; // DAD1 - ADC0_DP1
+    userChnConfig.convCompletedIntEnable = false; // Enable Interrupt on Conversion
+    userChnConfig.diffConvEnable = false;
+
+    // Apply Channel Confiuration ADC(instance)_SC1A. The 0 selects A.
+    ADC16_DRV_ConfigConvChn(instance, 0, &userChnConfig);
+
+}
+
+void IntHandlerDMA0(void *param, edma_chn_status_t chanStatus) {
+
+    EDMA_DRV_StopChannel(&Chn_State.chn0); //Might not be necessary if
+    // EDMA_HAL_STCDSetDisableDmaRequestAfterTCDDoneCmd() works.
+    EDMA_DRV_StopChannel(&Chn_State.chn1);
+
+    // Change buffers active -> lower -> upper -> active
+    sBufferLabel.activeBuffer = &(sampleBuffer[(activeBufferIdx + 1) % 3]);
+    sBufferLabel.lowerBuffer = &(sampleBuffer[(activeBufferIdx + 2) % 3]);
+    sBufferLabel.upperBuffer = &(sampleBuffer[(activeBufferIdx + 3) % 3]);
+    sBufferLabel.activeBufferIdx = (activeBufferIdx + 1) % 3;
+
+    EDMA_HAL_HTCDSetDestAddr(DMA_BASE, 0, *upperBuffer);
+    EDMA_HAL_HTCDSetDestAddr(DMA_BASE, 1, *lowerBuffer);
+
+    EDMA_DRV_StartChannel(&Chn_State.chn0);
+    EDMA_DRV_StartChannel(&Chn_State.chn1);
+
+}
+
+void config_DMA_Upper(void) {
+    // Config DMA for upper sample buffer on eDMA channel 0.
+    // Interupt on complete
+
+    Chn_State.chn0.channel = kEDMAChannel0;
+
+    edma_user_config_t edmaUserConfig0;
+    edmaUserConfig0.chnArbitration = kEDMAChnArbitrationRoundrobin;
+    edmaUserConfig0.notHaltOnError = false;
+
+    edma_state_t edmaState0; //Maybe don't need these?
+
+    EDMA_DRV_Init(&edmaState0, &edmaUserConfig0);
+
+    //Request DMA0 - Triggered by ADC0//
+    EDMA_DRV_RequestChannel(kEDMAChannel0, kDmaRequestMux0ADC0, &Chn_State.chn0);
+
+    /*********** Configure DMA Channel 0 **************************/
+    edma_transfer_config_t edmaTXcfg0;
+
+    edmaTXcfg0.srcAddr = (uint32_t)(&ADC0_RA);     /*!< Memory address pointing to the source data. */
+    edmaTXcfg0.destAddr = (uint32_t)(&(*sBufferlabel.upperBuffer[BUF_SIZE/2 - 1]));   /*!< Memory address pointing to the destination data. */
+    edmaTXcfg0.srcTransferSize = kEDMATransferSize_2Bytes;   /*!< Source data transfer size. */
+    edmaTXcfg0.destTransferSize = kEDMATransferSize_2Bytes;  /*!< Destination data transfer size. */
+    edmaTXcfg0.srcOffset = 0;         /*!< Sign-extended offset applied to the current source address to
+                                        form the next-state value as each source read/write is completed. */
+    edmaTXcfg0.destOffset = 2;
+    edmaTXcfg0.srcLastAddrAdjust = -BUF_SIZE/2;    /*!< Last source address adjustment. */
+    edmaTXcfg0.destLastAddrAdjust = 0;   /*!< Last destination address adjustment. Note here it is only
+                                                valid when scatter/gather feature is not enabled. */
+    edmaTXcfg0.srcModulo = kEDMAModuloDisable;       /*!< Source address modulo. */
+    edmaTXcfg0.destModulo = kEDMAModuloDisable;       /*!< Destination address modulo. */
+    edmaTXcfg0.minorLoopCount = 2;    /*!< Minor bytes transfer count. Number of bytes to be transferred
+                                             in each service request of the channel. */
+    edmaTXcfg0.majorLoopCount = BUF_SIZE/4;    /*!< Major iteration count. */
+
+    /*Channel - DMA 0. (true) - Interrupt on TCD Complete; (true) DMA request on TCD complete is disabled */
+    EDMA_DRV_PrepareDescriptorTransfer(&Chn_State.chn0, &stcd.chn0, &edmaTXcfg0, true, true);
+    EDMA_DRV_PushDescriptorToReg(&Chn_State.chn0, &stcd.chn0);
+    //Hopefully this makes sure that the DMA channel is disabled after the Major Loop Completes. Need to test.
+    EDMA_HAL_STCDSetDisableDmaRequestAfterTCDDoneCmd (&Chn_State.chn1, true );
+
+    /****** Install Callback function for Interrupt **********/
+    EDMA_DRV_InstallCallback(&Chn_State.chn0, IntHandlerDMA0, NULL);
+
+    EDMA_DRV_StartChannel(&Chn_State.chn0);
+}
+
+void config_DMA_Lower(void) {
+    // Config DMA for lower sample buffer on eDMA channel 1.
+    // No Interupt on complete
+    Chn_State.chn1.channel = kEDMAChannel1;
+
+    edma_user_config_t edmaUserConfig1;
+    edmaUserConfig1.chnArbitration = kEDMAChnArbitrationRoundrobin;
+    edmaUserConfig1.notHaltOnError = false;
+
+    edma_state_t edmaState1; //Maybe don't need these?
+
+    EDMA_DRV_Init(&edmaState1, &edmaUserConfig1);
+
+    //request DMA1 - Triggered by ADC0//
+    EDMA_DRV_RequestChannel(kEDMAChannel1, kDmaRequestMux0ADC0, &Chn_State.chn1);
+
+    /*********** Configure DMA Channel 1 **************************/
+    edma_transfer_config_t edmaTXcfg1;
+
+    edmaTXcfg1.srcAddr = (uint32_t)(&ADC0_RA);  /*!< Memory address pointing to the source data. */
+    edmaTXcfg1.destAddr = (uint32_t)(sBufferlabel.lowerBuffer); /*!< Memory address pointing to the destination data. */
+    edmaTXcfg1.srcTransferSize = kEDMATransferSize_2Bytes;   /*!< Source data transfer size. */
+    edmaTXcfg1.destTransferSize = kEDMATransferSize_2Bytes;  /*!< Destination data transfer size. */
+    edmaTXcfg1.srcOffset = 0;         /*!< Sign-extended offset applied to the current source address to
+                                        form the next-state value as each source read/write is completed. */
+    edmaTXcfg1.destOffset = 2;
+    edmaTXcfg1.srcLastAddrAdjust = 0;    /*!< Last source address adjustment. */
+    edmaTXcfg1.destLastAddrAdjust = -BUF_SIZE/2;   /*!< Last destination address adjustment. Note here it is only
+    valid when scatter/gather feature is not enabled. */
+    edmaTXcfg1.srcModulo = kEDMAModuloDisable;       /*!< Source address modulo. */
+    edmaTXcfg1.destModulo = kEDMAModuloDisable;       /*!< Destination address modulo. */
+    edmaTXcfg1.minorLoopCount = 2;    /*!< Minor bytes transfer count. Number of bytes to be transferred
+    in each service request of the channel. */
+    edmaTXcfg1.majorLoopCount = BUF_SIZE/4;    /*!< Major iteration count. */
+
+    /* I think the TCD works this way - The edma_transfer_config_t is a data structure that
+    holds settings for the TCD. The edma_software_tcd_t is the actaul software TCD.
+    EDMA_DRV_PrepareDescriptorTransfer() sets up the software TDC based on the data in
+    the edma_transfer_config_t structure.
+
+    /*This function call configures the rest of stcd.chn1.
+    Channel - DMA 1. (false) - no interrupt on TCD Complete; (true) DMA request on TCD complete is disabled */
+    EDMA_DRV_PrepareDescriptorTransfer(&Chn_State.chn1, &stcd.chn1, &edmaTXcfg1, false, false);
+    EDMA_DRV_PushDescriptorToReg(&Chn_State.chn1, &stcd.chn1);
+    //Hopefully this makes sure that the DMA channel is disabled after the Major Loop Completes. Need to test.
+    EDMA_HAL_STCDSetDisableDmaRequestAfterTCDDoneCmd (&Chn_State.chn1, true );
+
+    /******* Start Channels *******/
+    EDMA_DRV_StartChannel(&Chn_State.chn1);
+
+}
+
+
+
+
+/*********************************************************************/
+/******************** PDB Config *************************************/
+/*********************************************************************/
+
+void config_PDB(void) {
+
+    uint32_t busClock, modValue, countRate;
+    pdb_timer_config_t PdbTimerConfig;
+    uint32_t adcInstance = 0;
+
+    //Basic PDB configuration
+    PdbTimerConfig.loadValueMode = kPdbLoadValueImmediately;
+    PdbTimerConfig.seqErrIntEnable = false;
+    PdbTimerConfig.clkPreDiv = kPdbClkPreDivBy1;  //Adjust these multipliers to accomodate modValue
+    PdbTimerConfig.clkPreMultFactor = kPdbClkPreMultFactorAs1;
+    PdbTimerConfig.triggerInput = kPdbSoftTrigger;
+    PdbTimerConfig.continuousModeEnable = true;
+    PdbTimerConfig.dmaEnable = false;
+    PdbTimerConfig.intEnable = false;
+    PdbTimerConfig.seqErrIntEnable = true;
+    PDB_DRV_Init(0U, &PdbTimerConfig);
+
+    // Get Bus Clock
+    CLOCK_SYS_GetFreq(kBusClock, &busClock);
+    // Get count rate in Hz
+    countRate = busClock/PdbTimerConfig.clkPreDiv/PdbTimerConfig.clkPreMultFactor;
+    // Get Modulus value for sampling frequency (Must fit in 16bit field)
+    modValue = countRate/SAMPLEFREQ;
+
+    PDB_DRV_SetTimerModulusValue(0U, modValue);
+
+    PDB_DRV_LoadValuesCmd(0U);
+
+    //Start
+    PDB_DRV_SoftTriggerCmd(0);
+
+}
+
+int main(void)
+{
+
+    sBufferLabel.activeBuffer = &(sampleBuffer[0]);
+    sBufferLabel.lowerBuffer = &(sampleBuffer[1]);
+    sBufferLabel.upperBuffer = &(sampleBuffer[2]);
+    sBufferLabel.activeBufferIdx = 0;
+
+
+    config_DMA_Upper();
+    config_DMA_Lower();
+    config_PDB();
+    init_adc(0);
+
+    int i;
+    for (;;) {
+        i++;
+    }
+
+    return 0;
+}
+////////////////////////////////////////////////////////////////////////////////
+// EOF
+////////////////////////////////////////////////////////////////////////////////

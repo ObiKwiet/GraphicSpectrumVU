@@ -1,0 +1,67 @@
+17:29:52 **** Incremental Build of configuration Debug for project SerialTestFixed ****
+make all 
+'Building file: ../board/board.c'
+'Invoking: Cross ARM C Compiler'
+arm-none-eabi-gcc -mcpu=cortex-m4 -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 -O0 -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections -Wall  -g3 -D"CPU_MK64FN1M0VMD12" -I"../Sources" -I"C:\Freescale\KSDK_1.3.0\examples\frdmk64f" -I"C:\Freescale\KSDK_1.3.0\platform\drivers\src\uart" -I"C:\Freescale\KSDK_1.3.0\platform\system\inc" -I"C:\Freescale\KSDK_1.3.0\platform\hal\inc" -I"C:\Freescale\KSDK_1.3.0\platform\osa\inc" -I"C:\Freescale\KSDK_1.3.0\platform\drivers\inc" -I"../Project_Settings/Startup_Code" -I"../SDK/platform/CMSIS/Include" -I"../SDK/platform/devices" -I"../SDK/platform/devices/MK64F12/include" -std=c99 -MMD -MP -MF"board/board.d" -MT"board/board.o" -c -o "board/board.o" "../board/board.c"
+'Finished building: ../board/board.c'
+' '
+'Building file: ../board/gpio_pins.c'
+'Invoking: Cross ARM C Compiler'
+arm-none-eabi-gcc -mcpu=cortex-m4 -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 -O0 -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections -Wall  -g3 -D"CPU_MK64FN1M0VMD12" -I"../Sources" -I"C:\Freescale\KSDK_1.3.0\examples\frdmk64f" -I"C:\Freescale\KSDK_1.3.0\platform\drivers\src\uart" -I"C:\Freescale\KSDK_1.3.0\platform\system\inc" -I"C:\Freescale\KSDK_1.3.0\platform\hal\inc" -I"C:\Freescale\KSDK_1.3.0\platform\osa\inc" -I"C:\Freescale\KSDK_1.3.0\platform\drivers\inc" -I"../Project_Settings/Startup_Code" -I"../SDK/platform/CMSIS/Include" -I"../SDK/platform/devices" -I"../SDK/platform/devices/MK64F12/include" -std=c99 -MMD -MP -MF"board/gpio_pins.d" -MT"board/gpio_pins.o" -c -o "board/gpio_pins.o" "../board/gpio_pins.c"
+'Finished building: ../board/gpio_pins.c'
+' '
+'Building file: ../board/hardware_init.c'
+'Invoking: Cross ARM C Compiler'
+arm-none-eabi-gcc -mcpu=cortex-m4 -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 -O0 -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections -Wall  -g3 -D"CPU_MK64FN1M0VMD12" -I"../Sources" -I"C:\Freescale\KSDK_1.3.0\examples\frdmk64f" -I"C:\Freescale\KSDK_1.3.0\platform\drivers\src\uart" -I"C:\Freescale\KSDK_1.3.0\platform\system\inc" -I"C:\Freescale\KSDK_1.3.0\platform\hal\inc" -I"C:\Freescale\KSDK_1.3.0\platform\osa\inc" -I"C:\Freescale\KSDK_1.3.0\platform\drivers\inc" -I"../Project_Settings/Startup_Code" -I"../SDK/platform/CMSIS/Include" -I"../SDK/platform/devices" -I"../SDK/platform/devices/MK64F12/include" -std=c99 -MMD -MP -MF"board/hardware_init.d" -MT"board/hardware_init.o" -c -o "board/hardware_init.o" "../board/hardware_init.c"
+'Finished building: ../board/hardware_init.c'
+' '
+'Building file: ../board/pin_mux.c'
+'Invoking: Cross ARM C Compiler'
+arm-none-eabi-gcc -mcpu=cortex-m4 -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 -O0 -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections -Wall  -g3 -D"CPU_MK64FN1M0VMD12" -I"../Sources" -I"C:\Freescale\KSDK_1.3.0\examples\frdmk64f" -I"C:\Freescale\KSDK_1.3.0\platform\drivers\src\uart" -I"C:\Freescale\KSDK_1.3.0\platform\system\inc" -I"C:\Freescale\KSDK_1.3.0\platform\hal\inc" -I"C:\Freescale\KSDK_1.3.0\platform\osa\inc" -I"C:\Freescale\KSDK_1.3.0\platform\drivers\inc" -I"../Project_Settings/Startup_Code" -I"../SDK/platform/CMSIS/Include" -I"../SDK/platform/devices" -I"../SDK/platform/devices/MK64F12/include" -std=c99 -MMD -MP -MF"board/pin_mux.d" -MT"board/pin_mux.o" -c -o "board/pin_mux.o" "../board/pin_mux.c"
+'Finished building: ../board/pin_mux.c'
+' '
+'Building file: ../Sources/main.c'
+'Invoking: Cross ARM C Compiler'
+arm-none-eabi-gcc -mcpu=cortex-m4 -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 -O0 -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections -Wall  -g3 -D"CPU_MK64FN1M0VMD12" -I"../Sources" -I"C:\Freescale\KSDK_1.3.0\examples\frdmk64f" -I"C:\Freescale\KSDK_1.3.0\platform\drivers\src\uart" -I"C:\Freescale\KSDK_1.3.0\platform\system\inc" -I"C:\Freescale\KSDK_1.3.0\platform\hal\inc" -I"C:\Freescale\KSDK_1.3.0\platform\osa\inc" -I"C:\Freescale\KSDK_1.3.0\platform\drivers\inc" -I"../Project_Settings/Startup_Code" -I"../SDK/platform/CMSIS/Include" -I"../SDK/platform/devices" -I"../SDK/platform/devices/MK64F12/include" -std=c99 -MMD -MP -MF"Sources/main.d" -MT"Sources/main.o" -c -o "Sources/main.o" "../Sources/main.c"
+../Sources/main.c: In function 'main':
+../Sources/main.c:95:5: warning: implicit declaration of function 'BOARD_ClockInit' [-Wimplicit-function-declaration]
+     BOARD_ClockInit();
+     ^
+../Sources/main.c:102:5: warning: passing argument 1 of 'CLOCK_HAL_GetOutClk' makes pointer from integer without a cast [enabled by default]
+     clock = CLOCK_HAL_GetOutClk(MCG_BASE);
+     ^
+In file included from c:\freescale\ksdk_1.3.0\platform\system\src\clock\mk64f12\fsl_clock_mk64f12.h:34:0,
+                 from C:\Freescale\KSDK_1.3.0\platform\system\inc/fsl_clock_manager.h:329,
+                 from ../Sources/main.c:39:
+C:\Freescale\KSDK_1.3.0\platform\hal\inc/fsl_mcg_hal.h:399:10: note: expected 'struct MCG_Type *' but argument is of type 'unsigned int'
+ uint32_t CLOCK_HAL_GetOutClk(MCG_Type * base);
+          ^
+../Sources/main.c:82:14: warning: variable 'clock' set but not used [-Wunused-but-set-variable]
+     uint32_t clock;
+              ^
+'Finished building: ../Sources/main.c'
+' '
+'Building file: ../Project_Settings/Startup_Code/startup.c'
+'Invoking: Cross ARM C Compiler'
+arm-none-eabi-gcc -mcpu=cortex-m4 -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 -O0 -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections -Wall  -g3 -D"CPU_MK64FN1M0VMD12" -I"../Sources" -I"C:\Freescale\KSDK_1.3.0\examples\frdmk64f" -I"C:\Freescale\KSDK_1.3.0\platform\drivers\src\uart" -I"C:\Freescale\KSDK_1.3.0\platform\system\inc" -I"C:\Freescale\KSDK_1.3.0\platform\hal\inc" -I"C:\Freescale\KSDK_1.3.0\platform\osa\inc" -I"C:\Freescale\KSDK_1.3.0\platform\drivers\inc" -I"../Project_Settings/Startup_Code" -I"../SDK/platform/CMSIS/Include" -I"../SDK/platform/devices" -I"../SDK/platform/devices/MK64F12/include" -std=c99 -MMD -MP -MF"Project_Settings/Startup_Code/startup.d" -MT"Project_Settings/Startup_Code/startup.o" -c -o "Project_Settings/Startup_Code/startup.o" "../Project_Settings/Startup_Code/startup.c"
+'Finished building: ../Project_Settings/Startup_Code/startup.c'
+' '
+'Building file: ../Project_Settings/Startup_Code/startup_MK64F12.S'
+'Invoking: Cross ARM GNU Assembler'
+arm-none-eabi-gcc -mcpu=cortex-m4 -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 -O0 -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections -Wall  -g3 -x assembler-with-cpp -MMD -MP -MF"Project_Settings/Startup_Code/startup_MK64F12.d" -MT"Project_Settings/Startup_Code/startup_MK64F12.o" -c -o "Project_Settings/Startup_Code/startup_MK64F12.o" "../Project_Settings/Startup_Code/startup_MK64F12.S"
+'Finished building: ../Project_Settings/Startup_Code/startup_MK64F12.S'
+' '
+'Building target: SerialTest.elf'
+'Invoking: Cross ARM C++ Linker'
+arm-none-eabi-g++ -mcpu=cortex-m4 -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 -O0 -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections -Wall  -g3 -T "MK64FN1M0xxx12_flash.ld" -Xlinker --gc-sections -L"C:/Downloads/Dropbox/Projects/Project1/SerialTestFixed/Project_Settings/Linker_Files" -Wl,-Map,"SerialTest.map" -specs=nosys.specs -specs=nano.specs -Xlinker -z -Xlinker muldefs -o "SerialTest.elf"  ./board/board.o ./board/gpio_pins.o ./board/hardware_init.o ./board/pin_mux.o  ./Sources/main.o  ./Project_Settings/Startup_Code/startup.o ./Project_Settings/Startup_Code/startup_MK64F12.o ./Project_Settings/Startup_Code/system_MK64F12.o  C:/Freescale/KSDK_1.3.0/lib/ksdk_platform_lib/kds/K64F12/debug/libksdk_platform.a 
+'Finished building target: SerialTest.elf'
+' '
+'Invoking: Cross ARM GNU Print Size'
+arm-none-eabi-size --format=berkeley "SerialTest.elf"
+   text	   data	    bss	    dec	    hex	filename
+  16596	    132	   2128	  18856	   49a8	SerialTest.elf
+'Finished building: SerialTest.siz'
+' '
+
+17:29:58 Build Finished (took 5s.640ms)
+

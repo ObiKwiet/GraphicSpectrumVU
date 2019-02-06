@@ -1,0 +1,164 @@
+/*
+ * Copyright (c) 2015, Freescale Semiconductor, Inc.
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without modification,
+ * are permitted provided that the following conditions are met:
+ *
+ * o Redistributions of source code must retain the above copyright notice, this list
+ *   of conditions and the following disclaimer.
+ *
+ * o Redistributions in binary form must reproduce the above copyright notice, this
+ *   list of conditions and the following disclaimer in the documentation and/or
+ *   other materials provided with the distribution.
+ *
+ * o Neither the name of Freescale Semiconductor, Inc. nor the names of its
+ *   contributors may be used to endorse or promote products derived from this
+ *   software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
+ * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ * ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#include "fsl_device_registers.h"
+#include "fsl_debug_console.h"
+#include "fsl_edma_driver.h"
+#include "fsl_adc16_driver.h"
+#include "fsl_clock_manager.h"
+#include "arm_const_structs.h"
+#include <math.h>
+
+#include "edma_init.h"
+#include "perf_init.h"
+#include "constants.h"
+
+
+void PDB0_IRQHandler(void) {
+	int i;
+	while(1) {
+		i++;
+	}
+}
+
+struct Metrics {
+    uint32_t avgTimeFFT; //FFT Processing time in uS
+    uint32_t avgTimeFormatSend; // Time to format and send Data
+    uint32_t avgTimeWait; // Time left over until next buffer is ready.
+    uint32_t timeCount;
+    uint32_t loopCounter;
+    uint8_t time_over_run;
+};
+
+int main(void)
+{
+    uint32_t i;
+    uint32_t txBytes;
+	float FFTArray0[BUF_SIZE];
+    float FFTArray1[BUF_SIZE];
+    uint16_t LEDArray[LED_COLUMNS];
+    float LEDFloat;
+
+    float xAxisLinearValue, xAxisLinearValue_Last;
+    uint16_t xAxisLinearIndex, xAxisLinearIndex_Last;
+    float kXaxis = sqrtf(LED_COLUMNS*logf((float)(BUF_SIZE/2-1)));
+    // Calculate constants for semi-log graph scaling.
+
+    struct Metrics metric = {0};
+
+    // Initialize CFFT structures
+    arm_rfft_fast_instance_f32 S;
+    arm_rfft_fast_init_f32(&S, BUF_SIZE);
+
+    // Initialize peripherals
+    config_DMA_Upper();
+    config_DMA_Lower();
+    config_PDB();
+    init_adc(0);
+
+    initPIT();
+
+    // Main Loop
+    while(1) {
+
+        metric.loopCounter++;
+        metric.timeCount = PIT_CVAL2;
+        if(bufferReady()) //Make sure we finished the last loop in time.
+            metric.time_over_run = 1;
+
+        // Wait for new sample buffer to be ready
+        while(!bufferReady()) {}
+        bufferStatusReset();
+
+        metric.timeCount = metric.timeCount - PIT_CVAL2;
+        metric.avgTimeWait = (metric.timeCount + metric.loopCounter*metric.avgTimeWait) / (metric.loopCounter + 1);
+        metric.timeCount = PIT_CVAL2;
+
+        // Convert new sample buffer to float array
+        copyActiveToFloat(FFTArray0);
+
+        // 0 - Don't do the inverse FFT.
+        arm_rfft_fast_f32(&S, FFTArray0, FFTArray1, 0);
+
+        // The first two values of the RFFT are bins 0 and BUF_SIZE/2, which are
+        // purely real. To save memory, the output is the first half of FFTArray0. The send half of the array is left as sample data.
+        arm_cmplx_mag_f32(&FFTArray1[2], &FFTArray0[1], (uint32_t)(BUF_SIZE/2-1));
+        FFTArray0[0] = FFTArray1[0];
+        FFTArray0[BUF_SIZE/2] = FFTArray1[1];
+
+        metric.timeCount = metric.timeCount - PIT_CVAL2;
+        metric.avgTimeFFT = (metric.timeCount + metric.loopCounter*metric.avgTimeFFT) / (metric.loopCounter + 1);
+        metric.timeCount = PIT_CVAL2;
+
+        xAxisLinearValue_Last = 0;
+        xAxisLinearValue_Last = 0.0f;
+
+        //Format Data
+        for(i = 0; i < LED_COLUMNS; i++) {
+
+            xAxisLinearValue = expf((float)i/kXaxis);
+
+            // If log step less than 1, do linear interpolation of closest bins
+            if(xAxisLinearValue - xAxisLinearValue_Last <= 1.0f) {
+                xAxisLinearIndex = (uint16_t)(xAxisLinearValue); //truncate actual value, and interpolate between two closest bins.
+                // y = y0 + (y1 - y0)(x - x0)/(x1 - x0), where x1 - x0 = 1
+                LEDFloat = FFTArray0[xAxisLinearIndex] + (FFTArray0[xAxisLinearIndex + 1] * FFTArray0[xAxisLinearIndex]) * (xAxisLinearValue - (float)xAxisLinearIndex);
+            }
+
+            //If log step greater than 1, get mean of bins.
+            else {
+                xAxisLinearIndex = roundf(xAxisLinearValue);
+                xAxisLinearIndex_Last = roundf(xAxisLinearValue_Last);
+                arm_mean_f32(&FFTArray0[xAxisLinearIndex], xAxisLinearIndex - xAxisLinearIndex_Last, &LEDFloat);
+            }
+
+            // Normalize LEDFloat to LED Column height. (LED brightness used for fractional steps)
+            // This line also corrects for FFT scaling.
+            LEDArray[i] = (uint16_t)(LED_ROWS * 256 * (LEDFloat/(BUF_SIZE/2)));
+
+            xAxisLinearValue_Last = xAxisLinearValue;
+        }
+
+        txBytes = sizeof(LEDArray);
+        UART_DRV_SendData(0, LEDArray, txBytes);
+
+        metric.timeCount = metric.timeCount - PIT_CVAL2;
+        metric.avgTimeFormatSend = (metric.timeCount + metric.loopCounter*metric.avgTimeFormatSend) / (metric.loopCounter + 1);
+        metric.timeCount = PIT_CVAL2;
+
+        //Send Data
+
+    }
+
+    return 0;
+}
+////////////////////////////////////////////////////////////////////////////////
+// EOF
+////////////////////////////////////////////////////////////////////////////////

@@ -1,0 +1,6 @@
+16:52:16 **** Incremental Build of configuration debug for project adc_pdb_trigger_frdmk64f ****
+make -k all 
+make: Nothing to be done for `all'.
+
+16:52:16 Build Finished (took 234ms)
+
