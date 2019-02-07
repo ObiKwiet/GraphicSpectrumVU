@@ -5,6 +5,7 @@
 #include "fsl_clock_manager.h"
 #include "arm_const_structs.h"
 #include <math.h>
+#include "board.h"
 
 #include "edma_init.h"
 #include "perf_init.h"
@@ -33,8 +34,8 @@ int main(void)
 	float FFTArray0[BUF_SIZE];
     float FFTArray1[BUF_SIZE];
     uint16_t LEDArray[LED_COLUMNS];
-    char *ptrLEDArray;
-    ptrLEDArray = LEDArray;
+    uint8_t *ptrLEDArray;
+    ptrLEDArray = (uint8_t*)LEDArray;
     float LEDFloat;
 
     float xAxisLinearValue, xAxisLinearValue_Last;

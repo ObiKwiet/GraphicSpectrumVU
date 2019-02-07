@@ -30,11 +30,16 @@ Sources/main.o: ../Sources/main.c \
  ../SDK/platform/CMSIS/Include/arm_const_structs.h \
  ../SDK/platform/CMSIS/Include/arm_math.h \
  ../SDK/platform/CMSIS/Include/core_cm4.h \
- ../SDK/platform/CMSIS/Include/arm_common_tables.h ../Sources/edma_init.h \
- ../Sources/constants.h ../Sources/perf_init.h \
+ ../SDK/platform/CMSIS/Include/arm_common_tables.h \
+ C:\Downloads\Projects\GraphicSpectrumVU\VUMeter\board/board.h \
+ C:\Downloads\Projects\GraphicSpectrumVU\VUMeter\board/pin_mux.h \
+ C:\Downloads\Projects\GraphicSpectrumVU\VUMeter\board/gpio_pins.h \
+ C:\Freescale\KSDK_1.3.0/platform/drivers/inc/fsl_gpio_driver.h \
+ C:\Freescale\KSDK_1.3.0/platform/hal/inc/fsl_port_hal.h \
+ C:\Freescale\KSDK_1.3.0/platform/hal/inc/fsl_gpio_hal.h \
+ ../Sources/edma_init.h ../Sources/constants.h ../Sources/perf_init.h \
  C:\Freescale\KSDK_1.3.0/platform/drivers/inc/fsl_pdb_driver.h \
  C:\Freescale\KSDK_1.3.0/platform/hal/inc/fsl_pdb_hal.h \
- C:\Freescale\KSDK_1.3.0/platform/hal/inc/fsl_port_hal.h \
  C:\Freescale\KSDK_1.3.0/platform/hal/inc/fsl_smc_hal.h \
  C:\Freescale\KSDK_1.3.0/platform/drivers/inc/fsl_uart_driver.h \
  C:\Freescale\KSDK_1.3.0/platform/hal/inc/fsl_uart_hal.h
@@ -105,6 +110,18 @@ C:\Freescale\KSDK_1.3.0/platform/hal/inc/fsl_osc_hal.h:
 
 ../SDK/platform/CMSIS/Include/arm_common_tables.h:
 
+C:\Downloads\Projects\GraphicSpectrumVU\VUMeter\board/board.h:
+
+C:\Downloads\Projects\GraphicSpectrumVU\VUMeter\board/pin_mux.h:
+
+C:\Downloads\Projects\GraphicSpectrumVU\VUMeter\board/gpio_pins.h:
+
+C:\Freescale\KSDK_1.3.0/platform/drivers/inc/fsl_gpio_driver.h:
+
+C:\Freescale\KSDK_1.3.0/platform/hal/inc/fsl_port_hal.h:
+
+C:\Freescale\KSDK_1.3.0/platform/hal/inc/fsl_gpio_hal.h:
+
 ../Sources/edma_init.h:
 
 ../Sources/constants.h:
@@ -114,8 +131,6 @@ C:\Freescale\KSDK_1.3.0/platform/hal/inc/fsl_osc_hal.h:
 C:\Freescale\KSDK_1.3.0/platform/drivers/inc/fsl_pdb_driver.h:
 
 C:\Freescale\KSDK_1.3.0/platform/hal/inc/fsl_pdb_hal.h:
-
-C:\Freescale\KSDK_1.3.0/platform/hal/inc/fsl_port_hal.h:
 
 C:\Freescale\KSDK_1.3.0/platform/hal/inc/fsl_smc_hal.h:
 

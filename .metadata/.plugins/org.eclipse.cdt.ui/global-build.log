@@ -1,8 +1,0 @@
-11:44:45 **** Incremental Build of configuration Debug for project VUMeter ****
-make all 
-Invoking: Cross ARM GNU Print Size
-arm-none-eabi-size --format=berkeley "VUMeter.elf"
-   text	   data	    bss	    dec	    hex	filename
- 115840	    144	  14520	 130504	  1fdc8	VUMeter.elf
-Finished building: VUMeter.siz
- 
